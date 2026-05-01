@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
   <title>Cardboard Whispers — Black & White Birthday Postcard</title>
@@ -280,6 +280,29 @@
       .front-content, .back-content { padding: 20px 18px 50px; }
       .main-message { font-size: 1.6rem; }
     }
+    /* Make the cardboard container square */
+    .cardboard {
+      aspect-ratio: 1 / 1;        /* forces a perfect square */
+      width: 90%;                 /* responsive width */
+      max-width: 500px;           /* limit on large screens */
+      margin: 0 auto;             /* center it */
+}
+
+/* On mobile: stack vertically and put button below */
+@media (max-width: 768px) {
+    .wrapper {                  /* or whatever wraps both cardboard & button */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+    .music-button {
+      margin-top: 20px;         /* space under cardboard */
+  }
+}    
+
+
+
+
     /* handdrawn elements */
     .scribble {
       position: absolute;
@@ -292,15 +315,46 @@
     }
   </style>
 </head>
+<script>
+  const audio = document.getElementById('bg-music');
+  const playBtn = document.getElementById('playMusicBtn');
+
+  playBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.play().catch(e => console.log("Autoplay blocked:", e));
+      playBtn.textContent = '⏸ Pause Music';
+    } else {
+      audio.pause();
+      playBtn.textContent = '🎵 Play Music';
+    }
+  });
+</script>
+
+<script>
+  function burstConfetti() {
+    canvasConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+  }
+
+  // Option A: confetti on page load
+  window.addEventListener('load', burstConfetti);
+
+  // Option B: confetti when music starts playing
+  audio.addEventListener('play', burstConfetti);
+</script>
+
 <body>
 
 <!-- FLOATING CONFETTI CANVAS (gentle drifting particles) -->
 <canvas id="confetti-canvas"></canvas>
 
 <!-- === MUSIC PLAYER - FIXED === -->
-<audio controls autoplay>
-  <source src="https://raw.githubusercontent.com/blckfx1/cardboard/main/Oh_Wonder_-_Midnight_Moon.mp3" type="audio/mpeg">
+<!-- Hidden audio element (no controls) -->
+<audio id="bg-music" loop>
+  <source src="Oh_Wonder_-_Midnight_Moon.mp3" type="audio/mpeg">
 </audio>
+
+<!-- Custom play button -->
+<button id="playMusicBtn" class="music-button">🎵 Play Music</button>
 
 <div id="musicToggle" class="music-control" style="font-size:1.1rem; padding:14px 22px; background:#222;">
   <span>🎵</span> 
