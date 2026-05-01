@@ -1,0 +1,76 @@
+TECHNICAL SPECIFICATION DOCUMENT – HTML BIRTHDAY POSTCARD
+
+Project Name: Interactive HTML Birthday Postcard (Mobile-First, Vertical Story Style)
+Target: One single self-contained .html file (HTML + CSS + JS embedded)
+
+=== OVERALL CONCEPT ===
+- Occasion: Birthday congratulations
+- Design Style: Black-and-white only, complex mixed style
+  • Loft / hand-drawn sketch style with cats and other animals
+  • Weird, abstract, poetic surrealism inspired by board game DANY
+  • Night-time atmosphere
+- Color Palette: Strictly black, white, and shades of gray
+- Mood: Poetic, artistic, slightly mysterious, hand-crafted feel
+
+=== LAYOUT ===
+- Format: Vertical story style (tall mobile screen)
+- Dimensions: 1080px width × 1920px+ height, fully responsive, mobile-first
+- Card Type: Two sides – Front + Back (with smooth toggle/transition)
+- Front Side (Main):
+  - Night sky with stars and surreal nature (hand-drawn black & white)
+  - Hand-drawn cats + animals integrated poetically/abstractly
+  - Subtle confetti explosion
+  - Placeholder for personal photo (artistic frame)
+  - Main congratulatory text area
+- Back Side:
+  - Postcard back layout
+  - Title area (user will write)
+  - Large message area (user will write)
+  - Sender name at bottom
+  - Subtle decorative elements (stars, tiny animals)
+
+=== TYPOGRAPHY ===
+- Main Font: EB Garamond (Google Fonts)
+- Additional: Some text should have handwritten / ink-sketch effect (CSS or secondary font)
+- All text areas must have clear HTML comments for easy editing
+
+=== ANIMATIONS (subtle & elegant) ===
+- Twinkling stars
+- Gentle floating confetti (CSS or light Canvas)
+- Fade-in elements on load
+- Smooth Front ↔ Back transition (slide or 3D flip)
+- Soft pulsing on photo frame or main illustration
+
+=== MUSIC ===
+- Background music (soft instrumental or birthday theme)
+- Small play/pause control visible in corner
+- Autoplay muted (user can unmute)
+- Audio file placeholder: birthday-music.mp3 (easy to replace)
+
+=== TECHNICAL REQUIREMENTS ===
+- Single HTML file only
+- Use Google Fonts for EB Garamond
+- Vanilla JS + modern CSS (no heavy frameworks)
+- Fully responsive for mobile phones
+- Light performance (under 2MB total)
+- Black & white high contrast
+
+=== USER-EDITABLE PARTS (must be clearly marked with comments) ===
+- Recipient name / greeting
+- Main birthday message
+- Additional wishes
+- Sender name
+- Back side title
+- Personal photo URL
+- Music file URL
+
+=== ASSETS (placeholders) ===
+- Night sky background (hand-drawn B&W)
+- Hand-drawn cats & animals illustrations
+- Confetti particles
+- Personal photo placeholder
+
+INSTRUCTIONS FOR AI:
+Create a complete single-file HTML code exactly following this specification. 
+Make text areas easy to edit. Include all animations and music player. 
+Output only the full HTML code inside ```html ... ``` block.

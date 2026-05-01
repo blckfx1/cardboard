@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <title>Cardboard Whispers — Black & White Birthday Postcard</title>
+  <!-- Google Fonts: EB Garamond (serif main) + Caveat (handwritten effect) -->
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- canvas-confetti for subtle explosion (lightweight) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* better for flip but text select still works */
+    }
+
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'EB Garamond', serif;
+      padding: 24px 16px;
+      /* cardboard texture overlay */
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: repeating-linear-gradient(45deg, rgba(30,30,30,0.03) 0px, rgba(30,30,30,0.03) 2px, transparent 2px, transparent 8px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* main flip card container */
+    .flip-card {
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      background-color: transparent;
+      perspective: 1800px;
+      cursor: pointer;
+      position: relative;
+      z-index: 10;
+    }
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+      transform-style: preserve-3d;
+      border-radius: 36px;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.5);
+    }
+    /* flipped state */
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+    /* front & back common */
+    .card-front, .card-back {
+      position: relative;
+      width: 100%;
+      backface-visibility: hidden;
+      border-radius: 36px;
+      background: #fefcf0; /* warm off-white paper */
+      background-image: radial-gradient(circle at 15% 30%, rgba(0,0,0,0.02) 2%, transparent 2.5%),
+                        repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 12px);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .card-front {
+      transform: rotateY(0deg);
+      z-index: 2;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+    /* content wrapper to allow scroll */
+    .front-content, .back-content {
+      padding: 28px 24px 40px;
+      position: relative;
+      z-index: 4;
+    }
+    /* hand-drawn stars twinkling (front only) */
+    .stars-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+      border-radius: 36px;
+    }
+    .star {
+      position: absolute;
+      background: #000;
+      border-radius: 50%;
+      opacity: 0.2;
+      animation: twinkle 2.2s infinite alternate ease-in-out;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.1; transform: scale(1);}
+      100% { opacity: 0.8; transform: scale(1.2);}
+    }
+    /* pulsing frame animation */
+    @keyframes softPulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.2), 0 0 0 0 rgba(0,0,0,0.1);}
+      70% { box-shadow: 0 0 0 5px rgba(0,0,0,0.05), 0 0 0 12px rgba(0,0,0,0.02);}
+      100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.1), 0 0 0 0 rgba(0,0,0,0);}
+    }
+    .photo-frame {
+      width: 100%;
+      max-width: 220px;
+      margin: 0 auto 20px;
+      border: 2.5px solid #111;
+      padding: 8px 8px 12px 8px;
+      background: #fff;
+      transform: rotate(-0.5deg);
+      transition: all 0.2s;
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.05);
+      animation: softPulse 3.5s infinite ease;
+    }
+    .photo-frame img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      filter: grayscale(100%) contrast(1.2);
+      background: #eaeaea;
+    }
+    /* typography & sketch */
+    h1, h2, h3 {
+      font-family: 'EB Garamond', serif;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #111;
+    }
+    .handwrite {
+      font-family: 'Caveat', cursive;
+      font-weight: 500;
+      color: #2c2c2c;
+    }
+    .main-message {
+      font-size: 1.9rem;
+      line-height: 1.2;
+      margin: 20px 0 12px;
+      border-left: 4px solid #111;
+      padding-left: 18px;
+    }
+    .poem-text {
+      font-size: 1rem;
+      line-height: 1.45;
+      color: #2a2a2a;
+      margin: 16px 0;
+      font-style: italic;
+    }
+    /* SVG sketch style / cats and surreal animals */
+    .sketch-illustration {
+      margin: 20px 0 15px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .svg-cat {
+      width: 80px;
+      height: auto;
+      opacity: 0.85;
+      transition: transform 0.2s;
+    }
+    /* back side postcard layout */
+    .back-content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-height: 100%;
+    }
+    .back-header {
+      border-bottom: 2px dashed #333;
+      padding-bottom: 12px;
+      margin-bottom: 8px;
+    }
+    .postcard-message-area {
+      background: rgba(0,0,0,0.02);
+      padding: 18px;
+      border-left: 3px solid #222;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      line-height: 1.5;
+      color: #1a1a1a;
+    }
+    .sender {
+      margin-top: 20px;
+      text-align: right;
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      border-top: 1px dotted #444;
+      padding-top: 16px;
+    }
+    /* flip button */
+    .flip-btn {
+      position: absolute;
+      bottom: 16px;
+      right: 20px;
+      background: #111;
+      color: #eee;
+      border: none;
+      border-radius: 60px;
+      padding: 8px 18px;
+      font-family: 'EB Garamond', monospace;
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      z-index: 20;
+      cursor: pointer;
+      backdrop-filter: blur(2px);
+      transition: 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .flip-btn:hover {
+      background: #333;
+    }
+    /* music control */
+    .music-control {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #111;
+      color: #ddd;
+      border-radius: 40px;
+      padding: 8px 15px;
+      font-size: 0.8rem;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      backdrop-filter: blur(5px);
+      border: 1px solid #444;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .music-control span {
+      font-size: 1rem;
+    }
+    /* fade-in elements */
+    .fade-item {
+      animation: fadeUp 0.7s ease forwards;
+      opacity: 0;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(15px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    /* floating confetti canvas */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+    /* responsive */
+    @media (max-width: 560px) {
+      .front-content, .back-content { padding: 20px 18px 50px; }
+      .main-message { font-size: 1.6rem; }
+    }
+    /* handdrawn elements */
+    .scribble {
+      position: absolute;
+      bottom: 15px;
+      left: 20px;
+      font-size: 0.7rem;
+      opacity: 0.4;
+      font-family: monospace;
+      transform: rotate(-2deg);
+    }
+  </style>
+</head>
+<body>
+
+<!-- FLOATING CONFETTI CANVAS (gentle drifting particles) -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- === MUSIC PLAYER - FIXED === -->
+<audio id="bg-music" loop preload="metadata">
+  <source src="Oh_Wonder_-_Midnight_Moon.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+<div id="musicToggle" class="music-control" style="font-size:1.1rem; padding:14px 22px; background:#222;">
+  <span>🎵</span> 
+  <span id="musicStatus">▶ Play Music</span>
+</div>
+
+<!-- MAIN FLIP CARD -->
+<div class="flip-card" id="flipCard">
+  <div class="flip-card-inner">
+    <!-- FRONT SIDE (BIRTHDAY MAIN) -->
+    <div class="card-front">
+      <!-- dynamic stars container -->
+      <div class="stars-container" id="frontStars"></div>
+      <div class="front-content">
+        <!-- personal photo frame + pulse -->
+        <div class="photo-frame fade-item" style="animation-delay: 0.1s;">
+          <!-- EDITABLE PERSONAL PHOTO URL: replace src with your image link -->
+          <img id="userPhoto" src="https://picsum.photos/id/21/300/300" alt="birthday portrait" style="filter: grayscale(100%) contrast(1.1);">
+        </div>
+        
+        <!-- hand-drawn cats + weird surreal animals SVG group -->
+        <div class="sketch-illustration fade-item" style="animation-delay: 0.2s;">
+          <svg class="svg-cat" viewBox="0 0 100 80" fill="none" stroke="#111" stroke-width="1.5">
+            <path d="M20,50 L30,35 L45,40 L55,30 L70,45 L80,55 L75,70 L60,75 L40,72 L25,68 L20,50Z" fill="white" stroke="#111" stroke-linejoin="round"/>
+            <circle cx="38" cy="50" r="2.5" fill="#111"/>
+            <circle cx="58" cy="50" r="2.5" fill="#111"/>
+            <path d="M48 58 L52 58" stroke="#111" stroke-width="2"/>
+            <path d="M30 45 L20 41 M70 48 L82 44" stroke="#111" stroke-dasharray="2 2"/>
+          </svg>
+          <svg class="svg-cat" viewBox="0 0 100 80" fill="none" stroke="#111">
+            <path d="M68,30 Q75,15 85,25 Q92,38 86,50 Q70,55 60,48 Q48,40 52,30 Q58,20 68,30Z" fill="white" stroke="#111"/>
+            <path d="M72 33 L77 28" stroke="#111" stroke-width="2"/>
+            <circle cx="68" cy="36" r="2" fill="black"/>
+          </svg>
+          <svg class="svg-cat" viewBox="0 0 100 80">
+            <polygon points="50,15 62,30 55,45 45,45 38,30" fill="white" stroke="#111" stroke-width="1.5"/>
+            <path d="M45 35 L42 42 M56 35 L59 42" stroke="#111" stroke-width="1.2"/>
+            <path d="M30 55 L70 55 L65 68 L35 68 Z" fill="white" stroke="#111"/>
+          </svg>
+        </div>
+
+        <!-- MAIN CONGRATULATORY TEXT AREA (editable via comments) -->
+        <!-- EDIT: Recipient Name / Greeting Begin -->
+        <div class="main-message fade-item" style="animation-delay: 0.3s;">
+          ✦ Happy Birthday, <span id="recipientName" contenteditable="false">dear wanderer</span>! ✦
+        </div>
+        <!-- EDIT: Additional wish / poem text -->
+        <div class="poem-text fade-item handwrite" style="animation-delay: 0.4s;" id="extraWish">
+          under the cardboard moon & crooked cats,<br>
+          each shadow blows a candle — surreal bloom.
+        </div>
+        <!-- EDIT: main birthday message area -->
+        <div class="poem-text fade-item" style="animation-delay: 0.5s; font-size:0.95rem;" id="mainBirthdayMsg">
+          May your night be woven with silver constellations and whiskered secrets.<br>
+          Another rotation around the sun — ink & stars celebrate you.
+        </div>
+        <div class="scribble">✧ abstract cat constellation ✧</div>
+      </div>
+      <button class="flip-btn" id="flipToBackBtn">⇄ FLIP / BACK</button>
+    </div>
+
+    <!-- BACK SIDE (POSTCARD LAYOUT) -->
+    <div class="card-back">
+      <div class="back-content">
+        <div class="back-header">
+          <!-- EDITABLE: Back side title -->
+          <h2 class="handwrite" id="backTitle">✧ ... and the night writes back ✧</h2>
+        </div>
+        <!-- deco tiny animals / stars -->
+        <div class="sketch-illustration" style="justify-content: flex-start; gap: 8px; opacity: 0.7;">
+          <svg width="30" height="20" viewBox="0 0 40 30"><path d="M5,20 L10,8 L18,12 L24,6 L30,14 L34,22 L25,25 L16,23 L7,20Z" fill="none" stroke="#111"/><circle cx="15" cy="14" r="1.5" fill="#111"/><circle cx="24" cy="13" r="1.5" fill="#111"/></svg>
+          <span style="font-size: 1.2rem;">★</span>
+          <svg width="24" height="24" viewBox="0 0 30 30"><path d="M15,3 L18,10 L26,10 L20,15 L23,23 L15,18 L7,23 L10,15 L4,10 L12,10 Z" fill="white" stroke="#111"/></svg>
+        </div>
+        <!-- LARGE MESSAGE AREA (user will write) -->
+        <!-- EDIT: Back large message area (paragraph) -->
+        <div class="postcard-message-area" id="largeMessageArea">
+          Dear soul,<br><br>
+          Every crack in the cardboard holds a wish. May your birthday be filled with strange, beautiful moments — like cats that speak in verse and stars that turn into paper lanterns. Write your own magic here.<br><br>
+          🖤✨
+        </div>
+        <!-- EDIT: Sender name at bottom -->
+        <div class="sender" id="senderName">
+          — from your midnight companion, <span contenteditable="false">MoonChild</span>
+        </div>
+        <div class="scribble" style="position: static; margin-top: 8px; text-align: center;">✎ hand-painted echoes</div>
+      </div>
+      <button class="flip-btn" id="flipToFrontBtn" style="right: 20px; bottom: 16px;">⇄ FLIP / FRONT</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ---------------------------- USER EDITABLE FIELDS (MARKED WITH COMMENTS)
+    // For easier editing: All dynamic text elements and photo url modifiable here or via DOM comments
+    // but we also expose id's.
+    // <-- EDITABLE RECIPIENT NAME -->
+    const recipientSpan = document.getElementById('recipientName');
+    // <-- EDITABLE MAIN BIRTHDAY MESSAGE inside paragraph id mainBirthdayMsg -->
+    const mainMsg = document.getElementById('mainBirthdayMsg');
+    // <-- EDITABLE ADDITIONAL WISHES (poem area) -->
+    const extraWish = document.getElementById('extraWish');
+    // <-- EDITABLE BACK TITLE -->
+    const backTitle = document.getElementById('backTitle');
+    // <-- EDITABLE LARGE MESSAGE AREA (contenteditable false but inner html change) -->
+    const largeMsgArea = document.getElementById('largeMessageArea');
+    // <-- EDITABLE SENDER NAME -->
+    const senderSpan = document.getElementById('senderName');
+    // <-- EDITABLE PHOTO URL -->
+    const photoImg = document.getElementById('userPhoto');
+    // All these can be changed directly. For demonstration they are set but user can replace strings.
+    // Also we ensure transparency for backend replacement.
+
+    // ----- TWINKLING STARS GENERATION (front side only)
+    const starsContainer = document.getElementById('frontStars');
+    function generateStars() {
+      starsContainer.innerHTML = '';
+      const starCount = 70;
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        const size = Math.random() * 3 + 1;
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 3 + 's';
+        star.style.animationDuration = Math.random() * 2 + 1.5 + 's';
+        star.style.background = `rgba(0,0,0,${Math.random() * 0.6 + 0.2})`;
+        starsContainer.appendChild(star);
+      }
+    }
+    generateStars();
+
+    // ----- GENTLE FLOATING CONFETTI (canvas particles, black/white/gray)
+    const canvas = document.getElementById('confetti-canvas');
+    let ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationId = null;
+    let canvasWidth, canvasHeight;
+    
+    function resizeCanvas() {
+      canvasWidth = window.innerWidth;
+      canvasHeight = window.innerHeight;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+    }
+    
+    class ConfettiParticle {
+      constructor() {
+        this.x = Math.random() * canvasWidth;
+        this.y = Math.random() * canvasHeight;
+        this.size = Math.random() * 5 + 2;
+        this.speedX = (Math.random() - 0.5) * 0.4;
+        this.speedY = Math.random() * 0.8 + 0.2;
+        this.gray = Math.floor(Math.random() * 80 + 30); // 30-110 gray range
+        this.shape = Math.random() > 0.6 ? 'rect' : 'circle';
+        this.rotation = Math.random() * 360;
+        this.rotSpeed = (Math.random() - 0.5) * 1.2;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.rotation += this.rotSpeed;
+        if (this.y > canvasHeight + 20) {
+          this.y = -20;
+          this.x = Math.random() * canvasWidth;
+        }
+        if (this.x < -20) this.x = canvasWidth + 20;
+        if (this.x > canvasWidth + 20) this.x = -20;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation * Math.PI/180);
+        ctx.fillStyle = `rgb(${this.gray}, ${this.gray}, ${this.gray})`;
+        if (this.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size/2, 0, Math.PI*2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size*0.7);
+        }
+        ctx.restore();
+      }
+    }
+    
+    function initConfetti(count = 55) {
+      particles = [];
+      for(let i=0; i<count; i++) {
+        particles.push(new ConfettiParticle());
+      }
+    }
+    
+    function animateConfetti() {
+      if(!ctx) return;
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      for(let p of particles) {
+        p.update();
+        p.draw(ctx);
+      }
+      animationId = requestAnimationFrame(animateConfetti);
+    }
+    
+    function startGentleConfetti() {
+      resizeCanvas();
+      initConfetti(60);
+      animateConfetti();
+    }
+    
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      initConfetti(particles.length);
+    });
+    
+    // subtle confetti explosion on page load
+    function burstConfetti() {
+      canvasConfetti({ particleCount: 100, spread: 60, origin: { y: 0.6 }, startVelocity: 12, colors: ['#111', '#444', '#aaa', '#ddd'], decay: 0.9 });
+      setTimeout(() => {
+        canvasConfetti({ particleCount: 40, spread: 35, origin: { y: 0.4 }, colors: ['#000', '#5a5a5a'] });
+      }, 200);
+    }
+    
+    // --- FLIP CARD LOGIC
+    const flipCard = document.getElementById('flipCard');
+    const flipToBack = document.getElementById('flipToBackBtn');
+    const flipToFront = document.getElementById('flipToFrontBtn');
+    
+    function flipToBackSide() {
+      flipCard.classList.add('flipped');
+    }
+    function flipToFrontSide() {
+      flipCard.classList.remove('flipped');
+    }
+    flipToBack.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flipToBackSide();
+    });
+    flipToFront.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flipToFrontSide();
+    });
+    // also flip on card tap optional (double click only)
+    flipCard.addEventListener('dblclick', () => {
+      if(flipCard.classList.contains('flipped')) flipToFrontSide();
+      else flipToBackSide();
+    });
+    
+    // --- MUSIC AUTOPLAY & CONTROL
+    // --- MUSIC AUTOPLAY & CONTROL (with debug)
+const audio = document.getElementById('bg-music');
+const musicToggleDiv = document.getElementById('musicToggle');
+const musicStatusSpan = document.getElementById('musicStatus');
+let musicPlaying = false;
+
+console.log("🎵 Audio element found:", !!audio);
+console.log("🎵 Music toggle button found:", !!musicToggleDiv);
+
+if (!audio) {
+  console.error("❌ Audio element NOT found in DOM!");
+}
+if (!musicToggleDiv) {
+  console.error("❌ Music button NOT found in DOM!");
+}
+
+// Improved toggle function with better feedback
+function toggleMusic() {
+  console.log("🎵 Toggle clicked. Current state:", musicPlaying ? "playing" : "paused");
+  
+  if (musicPlaying) {
+    audio.pause();
+    musicPlaying = false;
+    musicStatusSpan.innerText = '▶ Play';
+  } else {
+    audio.play()
+      .then(() => {
+        musicPlaying = true;
+        musicStatusSpan.innerText = '♫ ON';
+        console.log("✅ Music started playing successfully");
+      })
+      .catch(err => {
+        console.error("❌ Play failed:", err);
+        musicStatusSpan.innerText = '❌ Error';
+      });
+  }
+}
+
+musicToggleDiv.addEventListener('click', toggleMusic);
+
+// Try to load the file
+audio.addEventListener('error', (e) => {
+  console.error("❌ Audio loading error! File not found or unsupported format.", e);
+  musicStatusSpan.innerText = '❌ File Error';
+});
+    
+    function playMusic() {
+      audio.muted = false;
+      audio.play().then(() => {
+        musicPlaying = true;
+        musicStatusSpan.innerText = '♫ on';
+      }).catch(e => {
+        console.log("autoplay blocked, need user gesture");
+        musicStatusSpan.innerText = 'muted';
+        musicPlaying = false;
+      });
+    }
+    
+    function toggleMusic() {
+      if(musicPlaying) {
+        audio.pause();
+        musicPlaying = false;
+        musicStatusSpan.innerText = 'play';
+      } else {
+        audio.play().then(() => {
+          musicPlaying = true;
+          musicStatusSpan.innerText = '♫ on';
+        }).catch(()=>{
+          musicStatusSpan.innerText = 'tap again';
+        });
+      }
+    }
+    musicToggleDiv.addEventListener('click', toggleMusic);
+    // attempt muted autoplay + force unmute after first user interaction anywhere
+    audio.muted = true;
+    audio.play().then(()=>{
+      // muted autoplay works
+    }).catch(()=>{});
+    window.addEventListener('touchstart', function initAudio() {
+      if(!musicPlaying && audio.muted) {
+        audio.muted = false;
+        audio.play().then(()=>{
+          musicPlaying = true;
+          musicStatusSpan.innerText = '♫ on';
+        }).catch(()=>{});
+      }
+      window.removeEventListener('touchstart', initAudio);
+    }, { once: true });
+    
+    // --- fade-in effect already applied via CSS class, manually trigger for dynamic elements
+    document.querySelectorAll('.fade-item').forEach((el, idx) => {
+      el.style.opacity = '1';
+    });
+    
+    // subtle pulsing photo frame already have CSS animation + confirmation 
+    // Additional artists details: DANY style doodle on back - additional floating abstract lines
+    const backDiv = document.querySelector('.card-back');
+    const extraDoodle = document.createElement('div');
+    extraDoodle.classList.add('scribble');
+    extraDoodle.style.position = 'absolute';
+    extraDoodle.style.bottom = '12px';
+    extraDoodle.style.left = '12px';
+    extraDoodle.style.opacity = '0.3';
+    extraDoodle.innerText = '// surreal whiskers //';
+    backDiv.appendChild(extraDoodle);
+    
+    // start all animations and confetti
+    startGentleConfetti();
+    burstConfetti();  // initial explosion
+    
+    // additionally ensure that stars shimmer and the floating particles integrate
+    // Add some handdrawn style dynamic border to photo frame
+    const frame = document.querySelector('.photo-frame');
+    if(frame) {
+      setInterval(() => {
+        // gentle pulse already done
+      }, 500);
+    }
+    
+    // We expose editable content ids via comments for quick edit.
+    // Example manual config (leave default as placeholder but user can replace easily):
+    // recipientSpan.innerText = "Luna"; // uncomment to edit, etc. We keep as "dear wanderer"
+    // All marked areas clearly in html comments: "EDIT:".
+    // Also console info
+    console.log("✅ Cardboard phase postcard ready — black & white, surreal cats, gentle music, flip to back");
+    
+    // fix back side height relative to front (?), adjust absolute position background to match height automatically
+    function syncBackHeight() {
+      const front = document.querySelector('.card-front');
+      const back = document.querySelector('.card-back');
+      if(front && back) {
+        let h = front.offsetHeight;
+        back.style.height = h + 'px';
+      }
+    }
+    setTimeout(syncBackHeight, 100);
+    window.addEventListener('load', syncBackHeight);
+    window.addEventListener('resize', () => { setTimeout(syncBackHeight, 50); });
+  })();
+</script>
+</body>
+</html>
